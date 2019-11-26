@@ -35,12 +35,12 @@ services:
     env_file: ${HOME}/.env    # points to environmental variables
     build:
       context: ${HOME}/.
-      dockerfile: jupyterhub
+      dockerfile: jupyterlab
       args:
-        JUPYTERHUB_VERSION: ${JUPYTERHUB_VERSION}
+        JUPYTERLAB_VERSION: ${JUPYTERLAB_VERSION}
     restart: always
-    image: jupyterhub_img
-    container_name: jupyterhub_hub
+    image: irose/citywide-jupyterlab
+    container_name: jupyterlab_lab
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:rw"
       - "data:${DATA_VOLUME_CONTAINER}"   
