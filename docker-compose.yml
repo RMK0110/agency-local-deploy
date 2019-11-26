@@ -1,0 +1,70 @@
+# docker compose file for local dev deployment using a (2) container orchestration: 
+# (i) jupyterhub and (ii) postgres/postgis
+
+version '2'
+
+services:
+
+  db:
+    image: postgres:11.0
+    container_name: mdillon_postgis_pgdb   # uses mdillon/postgis docker image
+    restart: always
+    environment:
+      POSTGRES_DB= ${POSTGRES_DB}        # ordinary database
+      PGDATA= ${PGDB_VOLUME_CONTAINER}   # data directory
+      POSTGRES_USER= ${DB_USER}          # database user 
+      POSTGRES_PASSWORD= ${DB_PASSWORD}  # database password
+    env_file: ${HOME}/.env                # points to environmental variables
+    ports:
+      - "5432:5432"
+    volumes:
+      - 'db:${PGDB_VOLUME_CONTAINER}'
+
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    restart: always
+    volumes:
+      - ${APP_MOUNT_DIR}:/app
+    command: "true"  
+
+  hub:
+    depends_on:
+      - db
+    env_file: ${HOME}/.env    # points to environmental variables
+    build:
+      context: ${HOME}/.
+      dockerfile: jupyterhub
+      args:
+        JUPYTERHUB_VERSION: ${JUPYTERHUB_VERSION}
+    restart: always
+    image: jupyterhub_img
+    container_name: jupyterhub_hub
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:rw"
+      - "data:${DATA_VOLUME_CONTAINER}"   
+    ports:
+      - "443:443"
+    links:
+      - db
+    environment:
+      DOCKER_NETWORK_NAME: ${DOCKER_NETWORK_NAME}_default
+      DOCKER_BUILD_SINGLE_DEPLOY: ${DOCKER_BUILD_SINGLE_DEPLOY}
+      POSTGRES_PGDB: ${POSTGRES_PGDB}
+      POSTGRES_HOST: db
+    networks:
+      - 'jupyterhub-net:${DOCKER_NETWORK_NAME}'
+
+volumes:
+  data:
+    external:
+      name: ${DATA_VOLUME_HOST}
+  pgdb:
+    external:
+      name: ${PGDB_VOLUME_HOST}
+
+networks:
+  default:
+    external:
+      name: ${DOCKER_NETWORK_NAME}
